@@ -6,6 +6,8 @@ import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/navigation/tv_rail.dart';
 import 'package:aves/widgets/settings/settings_definition.dart';
 import 'package:aves/widgets/settings/settings_page.dart';
+import 'package:aves/widgets/settings/smart_search/smart_search.dart';
+import 'package:collection/collection.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -65,7 +67,8 @@ class _ContentState extends State<_Content> {
     super.dispose();
   }
 
-  static final List<SettingsSection> sections = SettingsPage.sections;
+  // smart search is not available on TV
+  static final List<SettingsSection> sections = SettingsPage.sections.whereNot((v) => v is SmartSearchSection).toList();
 
   @override
   Widget build(BuildContext context) {

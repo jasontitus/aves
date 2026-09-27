@@ -21,6 +21,7 @@ import deckers.thibault.aves.channel.calls.GeocodingHandler
 import deckers.thibault.aves.channel.calls.MediaFetchObjectHandler
 import deckers.thibault.aves.channel.calls.MediaStoreHandler
 import deckers.thibault.aves.channel.calls.MetadataFetchHandler
+import deckers.thibault.aves.channel.calls.SmartSearchHandler
 import deckers.thibault.aves.channel.calls.StorageHandler
 import deckers.thibault.aves.channel.streams.darttoplatform.ImageByteStreamHandler
 import deckers.thibault.aves.channel.streams.darttoplatform.MediaStoreStreamHandler
@@ -32,11 +33,13 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -45,6 +48,11 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
     private var workCont: CancellableContinuation<Any?>? = null
     private var flutterEngine: FlutterEngine? = null
     private var backgroundChannel: MethodChannel? = null
+    private var smartSearchHandler: SmartSearchHandler? = null
+
+    // smart search indexing runs as a separate work, which does not analyze entries
+    private val isSmartSearchOnly: Boolean get() = inputData.getBoolean(KEY_SMART_SEARCH_ONLY, false)
+    private val notificationId: Int get() = if (isSmartSearchOnly) SMART_SEARCH_NOTIFICATION_ID else NOTIFICATION_ID
 
     override suspend fun doWork(): Result {
         Log.i(LOG_TAG, "Start analysis worker $id")
@@ -52,30 +60,37 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
         val foregroundInfo = createForegroundInfo()
         if (!isStopped) {
             setForeground(foregroundInfo)
-            suspendCancellableCoroutine { cont ->
-                workCont = cont
-                cont.invokeOnCancellation {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val stopReasonString = when (stopReason) {
-                            WorkInfo.STOP_REASON_CANCELLED_BY_APP -> "CANCELLED_BY_APP"
-                            WorkInfo.STOP_REASON_FOREGROUND_SERVICE_TIMEOUT -> "FOREGROUND_SERVICE_TIMEOUT"
-                            else -> "[$stopReason]"
+            // clean up even when cancelled, which resumes the continuation with a `CancellationException`
+            try {
+                suspendCancellableCoroutine { cont ->
+                    workCont = cont
+                    cont.invokeOnCancellation {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val stopReasonString = when (stopReason) {
+                                WorkInfo.STOP_REASON_CANCELLED_BY_APP -> "CANCELLED_BY_APP"
+                                WorkInfo.STOP_REASON_FOREGROUND_SERVICE_TIMEOUT -> "FOREGROUND_SERVICE_TIMEOUT"
+                                else -> "[$stopReason]"
+                            }
+                            Log.i(LOG_TAG, "Analysis worker got cancelled with stopReason=$stopReasonString")
+                        } else {
+                            Log.i(LOG_TAG, "Analysis worker got cancelled")
                         }
-                        Log.i(LOG_TAG, "Analysis worker got cancelled with stopReason=$stopReasonString")
-                    } else {
-                        Log.i(LOG_TAG, "Analysis worker got cancelled")
+                        stopDartAnalysisService()
+                        workCont?.resumeWithException(CancellationException())
                     }
-                    stopDartAnalysisService()
-                    workCont?.resumeWithException(CancellationException())
+                    onStart()
                 }
-                onStart()
+            } finally {
+                withContext(NonCancellable) { dispose() }
             }
-            dispose()
         }
         return Result.success()
     }
 
     private suspend fun dispose() {
+        // the Dart side may not get a chance to release what it holds when its engine is destroyed
+        smartSearchHandler?.dispose()
+        smartSearchHandler = null
         Log.i(LOG_TAG, "Clean analysis worker $id")
         flutterEngine?.let {
             FlutterUtils.runOnUiThread {
@@ -96,7 +111,8 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
             initChannels(applicationContext)
 
             val preferences = applicationContext.getSharedPreferences(SHARED_PREFERENCES_KEY, Context.MODE_PRIVATE)
-            val entryIdStrings = preferences.getStringSet(PREF_ENTRY_IDS_KEY, null)
+            // entry IDs saved for analysis do not apply to smart search indexing
+            val entryIdStrings = if (isSmartSearchOnly) emptySet() else preferences.getStringSet(PREF_ENTRY_IDS_KEY, null)
             startDartAnalysisService(entryIdStrings)
         } catch (e: Exception) {
             Log.e(LOG_TAG, "failed to initialize worker", e)
@@ -119,6 +135,7 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
         MethodChannel(messenger, MediaFetchObjectHandler.CHANNEL).setMethodCallHandler(MediaFetchObjectHandler(context))
         MethodChannel(messenger, MediaStoreHandler.CHANNEL).setMethodCallHandler(MediaStoreHandler(context))
         MethodChannel(messenger, MetadataFetchHandler.CHANNEL).setMethodCallHandler(MetadataFetchHandler(context))
+        MethodChannel(messenger, SmartSearchHandler.CHANNEL).setMethodCallHandler(SmartSearchHandler(context).also { smartSearchHandler = it })
         MethodChannel(messenger, StorageHandler.CHANNEL).setMethodCallHandler(StorageHandler(context))
 
         // result streaming: dart -> platform ->->-> dart
@@ -139,6 +156,7 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
                     "start", hashMapOf(
                         "entryIds" to entryIdStrings?.map { Integer.parseUnsignedInt(it) }?.toList(),
                         "force" to inputData.getBoolean(KEY_FORCE, false),
+                        "smartSearchOnly" to isSmartSearchOnly,
                     )
                 )
             }
@@ -202,9 +220,9 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
         // from Android 14 (API 34), foreground service type is mandatory for long-running workers:
         // https://developer.android.com/guide/background/persistent/how-to/long-running
         return when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM -> ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
-            Build.VERSION.SDK_INT == Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-            else -> ForegroundInfo(NOTIFICATION_ID, notification)
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM -> ForegroundInfo(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
+            Build.VERSION.SDK_INT == Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> ForegroundInfo(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            else -> ForegroundInfo(notificationId, notification)
         }
     }
 
@@ -224,6 +242,8 @@ class AnalysisWorker(context: Context, parameters: WorkerParameters) : Coroutine
 
         const val NOTIFICATION_CHANNEL = "analysis"
         const val NOTIFICATION_ID = 1
+        const val SMART_SEARCH_NOTIFICATION_ID = 2
+        const val KEY_SMART_SEARCH_ONLY = "smart_search_only"
 
         const val KEY_FORCE = "force"
     }

@@ -119,6 +119,10 @@ class SettingsDefaults {
   // search
   static const saveSearchHistory = true;
 
+  // smart search
+  static const enableSmartSearch = false;
+  static const smartSearchUnmeteredOnly = true;
+
   // map
   static const mapShowItemTracks = false;
 

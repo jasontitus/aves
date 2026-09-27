@@ -9,6 +9,7 @@ import 'package:aves/services/device_service.dart';
 import 'package:aves/services/media/media_fetch_service.dart';
 import 'package:aves/services/media/media_store_service.dart';
 import 'package:aves/services/metadata/metadata_fetch_service.dart';
+import 'package:aves/services/smart_search_service.dart';
 import 'package:aves/services/storage_service.dart';
 import 'package:aves/services/window_service.dart';
 import 'package:aves/utils/android_file_utils.dart';
@@ -24,6 +25,7 @@ import 'fake/media_fetch_service.dart';
 import 'fake/media_store_service.dart';
 import 'fake/metadata_fetch_service.dart';
 import 'fake/report_service.dart';
+import 'fake/smart_search_service.dart';
 import 'fake/storage_service.dart';
 import 'fake/window_service.dart';
 
@@ -39,6 +41,7 @@ Future<void> setUpAllServices() async {
   getIt.registerLazySingleton<MediaStoreService>(FakeMediaStoreService.new);
   getIt.registerLazySingleton<MetadataFetchService>(FakeMetadataFetchService.new);
   getIt.registerLazySingleton<ReportService>(FakeReportService.new);
+  getIt.registerLazySingleton<SmartSearchService>(FakeSmartSearchService.new);
   getIt.registerLazySingleton<StorageService>(FakeStorageService.new);
   getIt.registerLazySingleton<WindowService>(FakeWindowService.new);
 
@@ -52,6 +55,7 @@ Future<void> setUpAllServices() async {
 
 Future<void> setUpServices() async {
   (getIt<MediaStoreService>() as FakeMediaStoreService).reset();
+  (getIt<SmartSearchService>() as FakeSmartSearchService).reset();
 
   await settings.reset(includeInternalKeys: true);
   settings.canUseAnalysisService = false;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:aves/model/covers.dart';
@@ -11,6 +12,7 @@ import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/metadata/address.dart';
 import 'package:aves/model/metadata/catalog.dart';
 import 'package:aves/model/metadata/trash.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/vaults/details.dart';
 import 'package:aves/model/viewer/video_playback.dart';
 import 'package:aves/services/common/services.dart';
@@ -74,6 +76,11 @@ class SqfliteLocalMediaDb implements LocalMediaDb {
   Future<void> removeIds(Set<int> ids, {Set<EntryDataType>? dataTypes}) async {
     if (ids.isEmpty) return;
 
+    // partial removals (e.g. when refreshing an entry after a metadata edit) keep the entry ID,
+    // and smart search vectors are invalidated by their fingerprint instead
+    if (dataTypes == null) {
+      unawaited(smartSearch.onEntriesRemoved(ids));
+    }
     final _dataTypes = dataTypes ?? EntryDataType.values.toSet();
 
     // using array in `whereArgs` and using it with `where arg IN ?` is a pain, so we prefer `batch` instead

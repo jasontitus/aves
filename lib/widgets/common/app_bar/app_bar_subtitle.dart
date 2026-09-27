@@ -10,11 +10,13 @@ import 'package:material_ui/material_ui.dart';
 class SourceStateAwareAppBarTitle extends StatelessWidget {
   final Widget title;
   final CollectionSource source;
+  final String? readySubtitle;
 
   const new({
     super.key,
     required this.title,
     required this.source,
+    this.readySubtitle,
   });
 
   @override
@@ -37,7 +39,15 @@ class SourceStateAwareAppBarTitle extends StatelessWidget {
                 ),
               ),
               child: sourceState == SourceState.ready
-                  ? const SizedBox()
+                  ? readySubtitle != null
+                        ? Text(
+                            readySubtitle!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            softWrap: false,
+                            overflow: .fade,
+                            maxLines: 1,
+                          )
+                        : const SizedBox()
                   : SourceStateSubtitle(
                       source: source,
                     ),

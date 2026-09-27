@@ -14,6 +14,7 @@ import 'package:aves/model/settings/enums/display_refresh_rate_mode.dart';
 import 'package:aves/model/settings/enums/screen_on.dart';
 import 'package:aves/model/settings/enums/theme_brightness.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/collection_lens.dart';
 import 'package:aves/model/source/collection_source.dart';
 import 'package:aves/model/source/media_store_source.dart';
@@ -385,6 +386,7 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
         availability.onResume();
         RecentlyAddedFilter.updateNow();
         _mediaStoreSource.checkForChanges();
+        smartSearch.onAppResumed();
       default:
         break;
     }
@@ -601,6 +603,8 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
     await _mediaStoreSource.loadCatalogMetadata();
     await _mediaStoreSource.loadAddresses();
     _mediaStoreSource.updateDerivedFilters();
+    // entries analyzed in the background may now be indexed
+    unawaited(smartSearch.onAnalysisDone(_mediaStoreSource, isFullAnalysis: false));
   }
 
   void _onPlatformMessage(Map fields) {

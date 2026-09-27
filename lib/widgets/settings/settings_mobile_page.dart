@@ -18,14 +18,16 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SettingsMobilePage extends StatefulWidget {
-  const new({super.key});
+  final String? initialSection;
+
+  const new({super.key, this.initialSection});
 
   @override
   State<SettingsMobilePage> createState() => _SettingsMobilePageState();
 }
 
 class _SettingsMobilePageState extends State<SettingsMobilePage> with FeedbackMixin {
-  final ValueNotifier<String?> _expandedNotifier = ValueNotifier(null);
+  late final ValueNotifier<String?> _expandedNotifier = ValueNotifier(widget.initialSection);
 
   @override
   void dispose() {

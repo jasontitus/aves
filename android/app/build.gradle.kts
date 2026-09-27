@@ -236,6 +236,8 @@ dependencies {
 
     implementation(libs.commonsware.cwac)
     implementation(libs.metadata.extractor)
+    // on-device inference for smart search
+    implementation(libs.onnxruntime.android)
     implementation(libs.glide)
     implementation(libs.google.material)
     // SLF4J implementation for `mp4parser`

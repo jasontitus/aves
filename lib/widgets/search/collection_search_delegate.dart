@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aves/locale/calendar/calendar_utils.dart';
 import 'package:aves/model/dynamic_albums.dart';
 import 'package:aves/model/filters/aspect_ratio.dart';
@@ -18,6 +20,7 @@ import 'package:aves/model/filters/type.dart';
 import 'package:aves/model/filters/weekday.dart';
 import 'package:aves/model/grouping/common.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/album.dart';
 import 'package:aves/model/source/collection_lens.dart';
 import 'package:aves/model/source/collection_source.dart';
@@ -33,6 +36,11 @@ import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/common/identity/aves_filter_chip.dart';
 import 'package:aves/widgets/common/search/delegate.dart';
 import 'package:aves/widgets/common/search/page.dart';
+import 'package:aves/widgets/common/search/route.dart';
+import 'package:aves/widgets/settings/settings_page.dart';
+import 'package:aves/widgets/settings/smart_search/smart_search.dart';
+import 'package:aves/widgets/smart_search/results_page.dart';
+import 'package:aves/widgets/smart_search/search_suggestions.dart';
 import 'package:aves/widgets/viewer/controls/notifications.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -79,6 +87,7 @@ class CollectionSearchDelegate extends AvesSearchDelegate with FeedbackMixin, Va
          routeName: SearchPage.routeName,
        ) {
     query = initialQuery ?? '';
+    unawaited(_refreshSmartSearch());
     _mimeTypeFilters = source.visibleEntries.map((entry) => entry.mimeType).toSet().map(MimeFilter.new).toList()..sort();
   }
 
@@ -135,6 +144,12 @@ class CollectionSearchDelegate extends AvesSearchDelegate with FeedbackMixin, Va
                     TvEdgeFocus(
                       focusNode: _suggestionsTopFocusNode,
                     ),
+                    if (SmartSearch.canSearchFrom(parentCollection))
+                      SmartSearchSuggestions(
+                        query: query,
+                        onSearch: (v) => _selectSmartSearch(context, v),
+                        onSetUp: () => _goToSmartSearchSettings(context),
+                      ),
                     _buildFilterRow(
                       context: context,
                       filters: [
@@ -334,6 +349,44 @@ class CollectionSearchDelegate extends AvesSearchDelegate with FeedbackMixin, Va
     );
   }
 
+  Future<void> _refreshSmartSearch() async {
+    final status = await smartSearch.refreshStatus();
+    if (status?.ready == true) {
+      await smartSearch.refreshCoverage(source);
+    }
+  }
+
+  void _selectSmartSearch(BuildContext context, String query) {
+    final (candidates, isScoped) = SmartSearch.candidatesFor(source, parentCollection);
+    final navigator = Navigator.maybeOf(context);
+    if (navigator == null) return;
+    final route = SmartSearchResultsPage.textRoute(
+      source: source,
+      query: query,
+      candidates: candidates,
+      isScoped: isScoped,
+    );
+    // results replace the search page, so that going back leads to where the search started
+    if (canPop) {
+      clean();
+      navigator.pushReplacement(route);
+    } else {
+      // this search page stays below the results, and should show suggestions when back to it
+      _selectingFromQuery = false;
+      currentBody = SearchBody.suggestions;
+      navigator.push(route);
+    }
+  }
+
+  void _goToSmartSearchSettings(BuildContext context) {
+    Navigator.maybeOf(context)?.push(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: SettingsPage.routeName),
+        builder: (context) => const SettingsPage(initialSection: SmartSearchSection.sectionKey),
+      ),
+    );
+  }
+
   var _selectingFromQuery = false;
 
   @override
@@ -345,7 +398,12 @@ class CollectionSearchDelegate extends AvesSearchDelegate with FeedbackMixin, Va
         // `buildResults` is called in the build phase,
         // so we post the call that will filter the collection
         // and possibly trigger a rebuild here
-        _select(context, {_buildQueryFilter(true)});
+        final queryFilter = _buildQueryFilter(true);
+        if (queryFilter != null && smartSearch.shouldSubmitAsSmartSearch(queryFilter, source, parentCollection)) {
+          _selectSmartSearch(context, queryFilter.query.trim());
+        } else {
+          _select(context, {queryFilter});
+        }
       });
     }
     return const SizedBox();

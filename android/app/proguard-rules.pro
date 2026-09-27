@@ -7,6 +7,9 @@
 
 -keep class org.mp4parser.**{ *; }
 
+# ONNX Runtime classes are accessed from native code
+-keep class ai.onnxruntime.**{ *; }
+
 # referenced from: com.google.crypto.tink
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn javax.annotation.**

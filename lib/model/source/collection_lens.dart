@@ -16,6 +16,7 @@ import 'package:aves/model/filters/query.dart';
 import 'package:aves/model/filters/rating.dart';
 import 'package:aves/model/filters/trash.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/collection_source.dart';
 import 'package:aves/model/source/events.dart';
 import 'package:aves/model/source/location/location.dart';
@@ -44,6 +45,9 @@ class CollectionLens with ChangeNotifier {
   bool listenToSource, stackBursts, stackDevelopedRaws, fixedSort;
   List<AvesEntry>? fixedSelection;
 
+  // ranked smart search results, shown in relevance order
+  final SmartSearchResult? smartSearchResult;
+
   // temporary entries created for stacks of original entries
   final Set<AvesEntry> _syntheticEntries = {};
 
@@ -64,7 +68,16 @@ class CollectionLens with ChangeNotifier {
     this.stackDevelopedRaws = true,
     this.fixedSort = false,
     this.fixedSelection,
+    this.smartSearchResult,
   }) : filters = (filters ?? {}).nonNulls.toSet() {
+    final result = smartSearchResult;
+    if (result != null) {
+      fixedSelection ??= List.of(result.entries);
+      fixedSort = true;
+      // stacks would take the position of their main entry rather than their best ranked one
+      stackBursts = false;
+      stackDevelopedRaws = false;
+    }
     if (kFlutterMemoryAllocationsEnabled) ChangeNotifier.maybeDispatchObjectCreation(this);
     _updateLayoutFactors();
     id ??= hashCode;
@@ -126,6 +139,7 @@ class CollectionLens with ChangeNotifier {
     id: id,
     listenToSource: listenToSource ?? this.listenToSource,
     fixedSelection: fixedSelection ?? this.fixedSelection,
+    smartSearchResult: smartSearchResult,
   );
 
   void _disposeSyntheticEntries() {
@@ -143,6 +157,9 @@ class CollectionLens with ChangeNotifier {
   }
 
   bool get showHeaders {
+    // fixed order entries are in a single section
+    if (fixedSort) return false;
+
     bool showAlbumHeaders() => !filters.any((v) => v is StoredAlbumFilter && !v.reversed);
 
     switch (sortFactor) {
@@ -203,11 +220,16 @@ class CollectionLens with ChangeNotifier {
   }
 
   void _applyFilters() {
-    final entries = fixedSelection ?? (filters.contains(TrashFilter.instance) ? source.trashedEntries : source.visibleEntries);
+    Iterable<AvesEntry> entries = fixedSelection ?? (filters.contains(TrashFilter.instance) ? source.trashedEntries : source.visibleEntries);
+    if (smartSearchResult != null) {
+      // search results are a snapshot, and must not show items that were hidden or locked since
+      final visibleEntries = source.visibleEntries;
+      entries = entries.where(visibleEntries.contains);
+    }
     _disposeSyntheticEntries();
     _filteredSortedEntries = List.of(filters.isEmpty ? entries : entries.where((entry) => filters.every((filter) => filter.test(entry))));
 
-    if (tileLayout == .calendar) {
+    if (effectiveTileLayout == .calendar) {
       _stackByDate();
     } else {
       if (stackBursts) {
@@ -218,6 +240,11 @@ class CollectionLens with ChangeNotifier {
       }
     }
   }
+
+  TileLayout get effectiveTileLayout => effectiveTileLayoutFor(tileLayout, fixedSort: fixedSort);
+
+  // calendar layout groups entries by date, which is meaningless for a fixed order
+  static TileLayout effectiveTileLayoutFor(TileLayout layout, {required bool fixedSort}) => fixedSort && layout == .calendar ? .grid : layout;
 
   void _stackByDate() {
     final calOps = calendar.ops;

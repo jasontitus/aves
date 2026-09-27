@@ -12,6 +12,7 @@ class SettingKeys {
     searchHistoryKey,
     recentDestinationAlbumsKey,
     recentTagsKey,
+    smartSearchHistoryKey,
     // debug
     debugShowViewerTilesKey,
   };
@@ -39,6 +40,13 @@ class SettingKeys {
   static const recentSettingKeysKey = 'recent_setting_keys';
   static const recentDestinationAlbumsKey = 'recent_destination_albums';
   static const recentTagsKey = 'recent_tags';
+  static const smartSearchHistoryKey = 'smart_search_history';
+
+  // smart search
+  static const enableSmartSearchKey = 'enable_smart_search';
+  static const smartSearchUnmeteredOnlyKey = 'smart_search_unmetered_only';
+  static const smartSearchChargingOnlyKey = 'smart_search_charging_only';
+  static const smartSearchPromoDismissedKey = 'smart_search_promo_dismissed';
 
   // debug
   static const debugShowViewerTilesKey = 'debug_show_viewer_tiles';

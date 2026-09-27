@@ -22,6 +22,7 @@ kotlinxCoroutines = "1.11.0"
 ksp = "2.3.8"
 material = "1.14.0"
 metadataExtractor = "2.21.0"
+onnxruntime = "1.30.0"
 mp4parser = "c2898f1832"
 pixymeta = "f4513291b7"
 slf4j = "2.0.19"
@@ -52,6 +53,7 @@ google-material = { module = "com.google.android.material:material", version.ref
 gradle = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 junit = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }

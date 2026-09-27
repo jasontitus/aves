@@ -42,6 +42,27 @@ class Dependencies {
       sourceUrl: 'https://github.com/deckerst/mp4parser',
     ),
     Dependency(
+      name: 'ONNX Runtime',
+      license: mit,
+      sourceUrl: 'https://github.com/microsoft/onnxruntime',
+    ),
+    // smart search models, downloaded on demand
+    Dependency(
+      name: 'OpenAI CLIP (tokenizer vocabulary)',
+      license: mit,
+      sourceUrl: 'https://github.com/openai/CLIP',
+    ),
+    Dependency(
+      name: 'OpenCLIP (ViT-B/32 LAION-2B model)',
+      license: mit,
+      sourceUrl: 'https://github.com/mlfoundations/open_clip',
+    ),
+    Dependency(
+      name: 'Perception Encoder (PE-Core-B16 model)',
+      license: apache2,
+      sourceUrl: 'https://github.com/facebookresearch/perception_models',
+    ),
+    Dependency(
       name: 'PixyMeta Android (Aves fork)',
       license: eclipse1,
       sourceUrl: 'https://github.com/deckerst/pixymeta-android',

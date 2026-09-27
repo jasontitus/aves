@@ -17,6 +17,7 @@ import 'package:aves/theme/durations.dart';
 import 'package:aves/theme/icons.dart';
 import 'package:aves/utils/time_utils.dart';
 import 'package:aves/widgets/collection/app_bar.dart';
+import 'package:aves/widgets/smart_search/widgets.dart';
 import 'package:aves/widgets/collection/draggable_thumb_label.dart';
 import 'package:aves/widgets/collection/grid/list_details_theme.dart';
 import 'package:aves/widgets/collection/grid/section_layout.dart';
@@ -94,8 +95,9 @@ class _CollectionGridState extends State<CollectionGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final fixedSort = context.read<CollectionLens>().fixedSort;
     final (isCalendar, spacing) = context.select<Settings, (bool, double)>((v) {
-      final layout = v.effectiveCollectionTileLayout;
+      final layout = CollectionLens.effectiveTileLayoutFor(v.effectiveCollectionTileLayout, fixedSort: fixedSort);
       return (layout == .calendar, CollectionGrid.spacingForLayout(layout));
     });
 
@@ -153,7 +155,8 @@ class _CollectionGridContentState extends State<_CollectionGridContent> {
   @override
   Widget build(BuildContext context) {
     final selectable = context.select<ValueNotifier<AppMode>, bool>((v) => v.value.canSelectMedia);
-    final tileLayout = context.select<Settings, TileLayout>((v) => v.effectiveCollectionTileLayout);
+    final fixedSort = context.read<CollectionLens>().fixedSort;
+    final tileLayout = context.select<Settings, TileLayout>((v) => CollectionLens.effectiveTileLayoutFor(v.effectiveCollectionTileLayout, fixedSort: fixedSort));
     return Consumer<CollectionLens>(
       builder: (context, collection, child) {
         final sectionedListLayoutProvider = ValueListenableBuilder<double>(
@@ -303,6 +306,11 @@ class _CollectionGridContentState extends State<_CollectionGridContent> {
     );
 
     // reset track viewer entry
+    if (!context.mounted) {
+      // e.g. results page replaced from the viewer
+      viewerEntryNotifier.value = null;
+      return;
+    }
     final animate = context.read<Settings>().animate;
     if (animate) {
       // TODO TLAD fix timing when transition is incomplete, e.g. when going back while going to the viewer
@@ -632,6 +640,13 @@ class _CollectionScrollViewState extends State<_CollectionScrollView> with Widge
                     ),
                   );
 
+            if (collection.smartSearchResult != null) {
+              return EmptyContent(
+                icon: AIcons.smartSearch,
+                text: context.l10n.smartSearchNoResults,
+                bottom: const SmartSearchEmptyHint(),
+              );
+            }
             if (collection.filters.any((filter) => filter is FavouriteFilter)) {
               return EmptyContent(
                 icon: AIcons.favourite,

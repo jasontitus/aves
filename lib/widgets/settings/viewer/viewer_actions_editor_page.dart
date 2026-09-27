@@ -21,7 +21,7 @@ class ViewerActionEditorPage extends StatefulWidget {
 class _ViewerActionEditorPageState extends State<ViewerActionEditorPage> {
   late final QuickActionEditorController<EntryAction> _controller;
 
-  static final allAvailableActions = <List<EntryAction>>[
+  static final _allActions = <List<EntryAction>>[
     [
       .share,
       .edit,
@@ -30,6 +30,7 @@ class _ViewerActionEditorPageState extends State<ViewerActionEditorPage> {
       .copy,
       .move,
       .toggleFavourite,
+      .findSimilar,
       .rotateScreen,
       .viewSource,
       .rotateCCW,
@@ -47,6 +48,12 @@ class _ViewerActionEditorPageState extends State<ViewerActionEditorPage> {
       .settings,
     ],
   ];
+
+  // smart search actions are only offered when the feature is enabled
+  static List<List<EntryAction>> get allAvailableActions {
+    if (settings.enableSmartSearch) return _allActions;
+    return _allActions.map((group) => group.whereNot((v) => v == .findSimilar).toList()).toList();
+  }
 
   @override
   void initState() {

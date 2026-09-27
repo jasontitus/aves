@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Hijri calendars (tabular scheme IIa, Umm al-Qura)
+- Search: smart search, to find items by describing them, with an on-device model downloaded on demand
+- Viewer: "More like this" action, to find similar items
 
 ### Fixed
 

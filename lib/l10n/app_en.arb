@@ -141,6 +141,175 @@
   "entryActionAddFavourite": "Add to favorites",
   "entryActionRemoveFavourite": "Remove from favorites",
 
+  "entryActionFindSimilar": "More like this",
+  "smartSearchIndexingNotificationTitle": "Indexing for smart search",
+  "settingsSectionSmartSearch": "Smart search",
+  "settingsSmartSearchEnable": "Smart search",
+  "settingsSmartSearchEnableSubtitle": "Find photos by describing what they show",
+  "settingsSmartSearchModel": "Search model",
+  "settingsSmartSearchModelTitle": "Search model: {name}",
+  "@settingsSmartSearchModelTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSmartSearchModelSubtitle": "{state} · {size}",
+  "@settingsSmartSearchModelSubtitle": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "smartSearchModelStandard": "Standard",
+  "smartSearchModelBestQuality": "Best quality",
+  "smartSearchModelNotDownloaded": "Not downloaded",
+  "smartSearchModelDownloading": "Downloading: {done} of {total}",
+  "@smartSearchModelDownloading": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "smartSearchModelWaitingForNetwork": "Waiting for network",
+  "smartSearchModelWaitingForUnmeteredNetwork": "Waiting for Wi-Fi",
+  "smartSearchModelInstalled": "Installed",
+  "smartSearchModelDownloadFailed": "Download failed",
+  "smartSearchModelNoSpace": "Not enough storage space: {size} needed",
+  "@smartSearchModelNoSpace": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "smartSearchDownloadButtonLabel": "DOWNLOAD",
+  "smartSearchRetryButtonLabel": "RETRY",
+  "smartSearchDownloadDialogMessage": "The search model ({size}) is downloaded once from Hugging Face. Your photos are analyzed on this device and are never uploaded.\n\nThe first indexing runs in the background and can take several hours.",
+  "@smartSearchDownloadDialogMessage": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSmartSearchUnmeteredOnly": "Download over Wi-Fi only",
+  "settingsSmartSearchChargingOnly": "Index only while charging",
+  "settingsSmartSearchChargingOnlySubtitle": "Open Aves while charging to continue indexing",
+  "settingsSmartSearchIndex": "Index",
+  "smartSearchIndexProgress": "{done} of {total} items indexed",
+  "@smartSearchIndexProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smartSearchIndexFailed": "{count, plural, =1{{count} item could not be read} other{{count} items could not be read}}",
+  "@smartSearchIndexFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smartSearchIndexComplete": "{count, plural, =1{{count} item indexed} other{{count} items indexed}}",
+  "@smartSearchIndexComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smartSearchIndexRemainingMinutes": "{count, plural, =1{About {count} minute left} other{About {count} minutes left}}",
+  "@smartSearchIndexRemainingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smartSearchIndexRemainingHours": "{count, plural, =1{About {count} hour left} other{About {count} hours left}}",
+  "@smartSearchIndexRemainingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smartSearchIndexPausedCharging": "Paused until the device is charging",
+  "smartSearchIndexPausedBattery": "Paused because the battery is low",
+  "smartSearchIndexPausedThermal": "Paused because the device is too warm",
+  "settingsSmartSearchStorage": "Storage used: {size}",
+  "@settingsSmartSearchStorage": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSmartSearchDelete": "Delete model and index",
+  "smartSearchDeleteDialogMessage": "Delete the search model and index? You can download the model again later.",
+  "smartSearchLanguageHint": "Descriptions work best in English",
+  "searchSmartSearchSuggestion": "Search for “{query}”",
+  "@searchSmartSearchSuggestion": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchSmartSearchSuggestionSubtitle": "Finds photos and videos by what they show",
+  "searchSmartSearchNotIndexedYet": "Indexing has not started yet",
+  "searchSmartSearchPartialIndex": "{done} of {total} items indexed so far",
+  "@searchSmartSearchPartialIndex": {
+    "placeholders": {
+      "done": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "searchSmartSearchUnavailable": "The search model is not ready",
+  "searchSmartSearchRecentSectionTitle": "Recent smart searches",
+  "searchSmartSearchPromoTitle": "Find photos by describing them",
+  "searchSmartSearchPromoSubtitle": "Set up smart search, which runs on this device",
+  "smartSearchResultsSubtitle": "Best matches",
+  "smartSearchResultsFilteredSubtitle": "Best matches within filtered items",
+  "smartSearchSimilarTitle": "Similar to {name}",
+  "@smartSearchSimilarTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "smartSearchSimilarTitleGeneric": "Similar items",
+  "smartSearchNoResults": "No matching items",
+  "smartSearchFailed": "Search failed",
+
   "videoActionCaptureFrame": "Capture frame",
   "videoActionMute": "Mute",
   "videoActionUnmute": "Unmute",

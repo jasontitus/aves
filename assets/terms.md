@@ -14,6 +14,8 @@ The app does not collect any personal data. We never have access to your photos 
 
 __Optionally, with your consent, the app accesses the inventory of installed apps__ to improve album display.
 
+__Optionally, if you enable smart search, the app downloads search models__ from Hugging Face. Only the model files are requested: your photos, videos and search queries are processed on your device and are never sent anywhere.
+
 __Optionally, with your consent, the app collects anonymous error and diagnostic data__ to improve the app quality. We use Firebase Crashlytics, and the anonymous data are stored on their servers. Please note that those are anonymous data, there is absolutely nothing personal about those data.
 
 ## Contact

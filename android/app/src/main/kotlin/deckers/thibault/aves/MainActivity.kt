@@ -42,6 +42,7 @@ import deckers.thibault.aves.channel.calls.MediaStoreHandler
 import deckers.thibault.aves.channel.calls.MetadataEditHandler
 import deckers.thibault.aves.channel.calls.MetadataFetchHandler
 import deckers.thibault.aves.channel.calls.SecurityHandler
+import deckers.thibault.aves.channel.calls.SmartSearchHandler
 import deckers.thibault.aves.channel.calls.StorageHandler
 import deckers.thibault.aves.channel.calls.StoragePermissionHandler
 import deckers.thibault.aves.channel.calls.WallpaperHandler
@@ -88,6 +89,7 @@ open class MainActivity : FlutterFragmentActivity() {
     internal lateinit var intentDataMap: MutableMap<String, Any?>
     private lateinit var analysisHandler: AnalysisHandler<MainActivity>
     private lateinit var mediaSessionHandler: MediaSessionHandler
+    private lateinit var smartSearchHandler: SmartSearchHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(LOG_TAG, "onCreate intent=$intent")
@@ -155,6 +157,7 @@ open class MainActivity : FlutterFragmentActivity() {
         // - need Context
         analysisHandler = AnalysisHandler(this, ::onAnalysisCompleted)
         mediaSessionHandler = MediaSessionHandler(this, mediaCommandStreamHandler)
+        smartSearchHandler = SmartSearchHandler(this)
         MethodChannel(messenger, AccessibilityHandler.CHANNEL).setMethodCallHandler(AccessibilityHandler(this))
         MethodChannel(messenger, AnalysisHandler.CHANNEL).setMethodCallHandler(analysisHandler)
         MethodChannel(messenger, AppAdapterHandler.CHANNEL).setMethodCallHandler(AppAdapterHandler(this))
@@ -171,6 +174,7 @@ open class MainActivity : FlutterFragmentActivity() {
         MethodChannel(messenger, MetadataEditHandler.CHANNEL).setMethodCallHandler(MetadataEditHandler(this))
         MethodChannel(messenger, MetadataFetchHandler.CHANNEL).setMethodCallHandler(MetadataFetchHandler(this))
         MethodChannel(messenger, SecurityHandler.CHANNEL).setMethodCallHandler(SecurityHandler(this))
+        MethodChannel(messenger, SmartSearchHandler.CHANNEL).setMethodCallHandler(smartSearchHandler)
         MethodChannel(messenger, StorageHandler.CHANNEL).setMethodCallHandler(StorageHandler(this))
         MethodChannel(messenger, StoragePermissionHandler.CHANNEL).setMethodCallHandler(StoragePermissionHandler(this))
         MethodChannel(messenger, WallpaperHandler.CHANNEL).setMethodCallHandler(WallpaperHandler(this))
@@ -231,6 +235,7 @@ open class MainActivity : FlutterFragmentActivity() {
     override fun onDestroy() {
         Log.i(LOG_TAG, "onDestroy")
         mediaSessionHandler.dispose()
+        smartSearchHandler.dispose()
         mediaStoreChangeStreamHandler.dispose()
         settingsChangeStreamHandler.dispose()
         try {

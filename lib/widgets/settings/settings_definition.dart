@@ -17,7 +17,7 @@ abstract class SettingsSection {
       future: tiles(sectionContext),
       builder: (tileContext, snapshot) {
         final tiles = snapshot.data;
-        if (tiles == null) return const SizedBox();
+        if (tiles == null || tiles.isEmpty) return const SizedBox();
 
         return AvesExpansionTile(
           // key is expected by test driver
@@ -28,6 +28,7 @@ abstract class SettingsSection {
           leading: icon(tileContext),
           title: title(tileContext),
           expandedNotifier: expandedNotifier,
+          initiallyExpanded: expandedNotifier.value == key,
           showHighlight: false,
           // reuse section context so that dialogs opened from tiles have the right text theme
           children: tiles.map((v) => v.build(sectionContext)).toList(),

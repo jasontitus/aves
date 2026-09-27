@@ -88,6 +88,7 @@ class SettingsTilePrivacySaveSearchHistory extends SettingsTile {
       settings.saveSearchHistory = v;
       if (!v) {
         settings.searchHistory = [];
+        settings.smartSearchHistory = [];
       }
     },
     title: title,

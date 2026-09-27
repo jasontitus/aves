@@ -346,10 +346,18 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
       );
     } else {
       String titleText;
+      String? readySubtitle;
+      final smartSearchResult = collection.smartSearchResult;
       if (appMode.isPickingMedia) {
         titleText = l10n.collectionPickPageTitle;
       } else if (isTrash) {
         titleText = l10n.binPageTitle;
+      } else if (smartSearchResult != null) {
+        // the reference item may have been hidden since
+        final similarTo = smartSearchResult.similarTo;
+        final similarName = similarTo != null && source.visibleEntries.contains(similarTo) ? similarTo.bestTitle : null;
+        titleText = smartSearchResult.query ?? (similarName != null ? l10n.smartSearchSimilarTitle(similarName) : l10n.smartSearchSimilarTitleGeneric);
+        readySubtitle = smartSearchResult.isScoped ? l10n.smartSearchResultsFilteredSubtitle : l10n.smartSearchResultsSubtitle;
       } else {
         titleText = l10n.collectionPageTitle;
       }
@@ -358,6 +366,7 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
         title = SourceStateAwareAppBarTitle(
           title: title,
           source: source,
+          readySubtitle: readySubtitle,
         );
       }
       return InteractiveAppBarTitle(
@@ -840,14 +849,16 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
       settings.collectionSortReverse,
     );
     final extentController = context.read<TileExtentController>();
+    // relevance ordered results can change the layout, but neither sorting nor grouping
+    final isFixedOrder = collection.fixedSort;
     final value = await showAvesDialog<(TileLayout, SortFactor, EntrySectionFactor, bool)>(
       context: context,
       builder: (context) {
         return ChangeLayoutDialog<EntrySectionFactor>(
           initialValue: initialValue,
-          layoutOptions: CollectionAppBar.layoutOptions.map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
-          sortOptions: CollectionAppBar.sortOptions.map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
-          sectionOptions: CollectionAppBar.sectionOptions.map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
+          layoutOptions: CollectionAppBar.layoutOptions.where((v) => !isFixedOrder || v != .calendar).map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
+          sortOptions: isFixedOrder ? [] : CollectionAppBar.sortOptions.map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
+          sectionOptions: isFixedOrder ? [] : CollectionAppBar.sectionOptions.map((v) => ChangeLayoutDialogOption(value: v, title: v.getName(context), icon: v.icon)).toList(),
           sortOrder: (factor, reverse) => factor.getOrderName(context, reverse),
           canSection: (l, s, g) => l != .calendar && s == .date,
           tileExtentController: extentController,
@@ -859,6 +870,7 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
     await Future.delayed(ADurations.dialogTransitionLoose * timeDilation);
     if (value != null && initialValue != value) {
       settings.setTileLayout(CollectionPage.routeName, value.$1);
+      if (isFixedOrder) return;
       settings.collectionSortFactor = value.$2;
       settings.collectionSectionFactor = value.$3;
       settings.collectionSortReverse = value.$4;

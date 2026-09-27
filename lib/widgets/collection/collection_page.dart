@@ -5,6 +5,7 @@ import 'package:aves/model/entry/entry.dart';
 import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/filters/query.dart';
 import 'package:aves/model/filters/trash.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/highlight.dart';
 import 'package:aves/model/selection.dart';
 import 'package:aves/model/settings/settings.dart';
@@ -38,12 +39,14 @@ class CollectionPage extends StatefulWidget {
   final CollectionSource source;
   final Set<CollectionFilter?>? filters;
   final bool Function(AvesEntry element)? highlightTest;
+  final SmartSearchResult? smartSearchResult;
 
   const new({
     super.key,
     required this.source,
     required this.filters,
     this.highlightTest,
+    this.smartSearchResult,
   });
 
   @override
@@ -62,6 +65,7 @@ class _CollectionPageState extends State<CollectionPage> {
     _collection = CollectionLens(
       source: widget.source,
       filters: widget.filters,
+      smartSearchResult: widget.smartSearchResult,
     );
     super.initState();
     _subscriptions.add(

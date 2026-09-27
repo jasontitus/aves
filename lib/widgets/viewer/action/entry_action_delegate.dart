@@ -11,6 +11,7 @@ import 'package:aves/model/entry/extensions/multipage.dart';
 import 'package:aves/model/entry/extensions/props.dart';
 import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/collection_lens.dart';
 import 'package:aves/model/source/collection_source.dart';
 import 'package:aves/model/vaults/vaults.dart';
@@ -31,6 +32,7 @@ import 'package:aves/widgets/dialogs/aves_dialog.dart';
 import 'package:aves/widgets/dialogs/convert_entry_dialog.dart';
 import 'package:aves/widgets/dialogs/entry_editors/rename_entry_dialog.dart';
 import 'package:aves/widgets/settings/settings_page.dart';
+import 'package:aves/widgets/smart_search/results_page.dart';
 import 'package:aves/widgets/viewer/action/entry_info_action_delegate.dart';
 import 'package:aves/widgets/viewer/action/printer.dart';
 import 'package:aves/widgets/viewer/action/single_entry_editor.dart';
@@ -73,6 +75,10 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
       switch (action) {
         case .toggleFavourite:
           return collection != null;
+        case .findSimilar:
+          // stacks (e.g. bursts) are synthetic entries, so we check the actual entry
+          final entry = collection?.source.getEntryById(mainEntry.id);
+          return appMode == .main && !settings.useTvLayout && smartSearch.isReady && entry != null && SmartSearch.isIndexable(entry);
         case .delete:
         case .rename:
         case .move:
@@ -217,6 +223,8 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
         appService.shareEntries({targetEntry}).then((success) {
           if (!success) showNoMatchingAppDialog(context);
         });
+      case .findSimilar:
+        _findSimilar(context);
       case .toggleFavourite:
         targetEntry.toggleFavourite();
       // raster
@@ -522,6 +530,29 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
         builder: (context) => ViewerDebugPage(entry: targetEntry),
       ),
     );
+  }
+
+  // the reference entry is the main entry (i.e. the default page for multi-page items)
+  void _findSimilar(BuildContext context) {
+    final source = collection?.source;
+    final entry = source?.getEntryById(mainEntry.id);
+    final navigator = Navigator.maybeOf(context);
+    if (source == null || entry == null || navigator == null) return;
+    final route = SmartSearchResultsPage.similarRoute(context, source: source, entry: entry);
+    if (collection?.smartSearchResult != null) {
+      navigator.pop();
+      // when viewing results, replace them instead of stacking pages
+      String? topRouteName;
+      navigator.popUntil((route) {
+        topRouteName = route.settings.name;
+        return true;
+      });
+      if (topRouteName == SmartSearchResultsPage.routeName) {
+        navigator.pushReplacement(route);
+        return;
+      }
+    }
+    navigator.push(route);
   }
 
   void _goToSettings(BuildContext context) {

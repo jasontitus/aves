@@ -8,6 +8,7 @@ import 'package:aves/widgets/settings/display/display.dart';
 import 'package:aves/widgets/settings/language/language.dart';
 import 'package:aves/widgets/settings/navigation/navigation.dart';
 import 'package:aves/widgets/settings/privacy/privacy.dart';
+import 'package:aves/widgets/settings/smart_search/smart_search.dart';
 import 'package:aves/widgets/settings/settings_definition.dart';
 import 'package:aves/widgets/settings/settings_mobile_page.dart';
 import 'package:aves/widgets/settings/settings_tv_page.dart';
@@ -28,19 +29,23 @@ class SettingsPage extends StatelessWidget {
     ViewerSection(),
     VideoSection(),
     PrivacySection(),
+    SmartSearchSection(),
     AccessibilitySection(),
     DisplaySection(),
     LanguageSection(),
   ];
 
-  const new({super.key});
+  // key of the section to expand initially
+  final String? initialSection;
+
+  const new({super.key, this.initialSection});
 
   @override
   Widget build(BuildContext context) {
     if (settings.useTvLayout) {
       return const SettingsTvPage();
     } else {
-      return const SettingsMobilePage();
+      return SettingsMobilePage(initialSection: initialSection);
     }
   }
 }

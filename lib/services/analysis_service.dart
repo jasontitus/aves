@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:aves/l10n/l10n.dart';
 import 'package:aves/model/device.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/analysis_controller.dart';
 import 'package:aves/model/source/collection_source.dart';
 import 'package:aves/model/source/media_store_source.dart';
@@ -90,6 +91,7 @@ class Analyzer with WidgetsBindingObserver {
   final ValueNotifier<AnalyzerState> _serviceStateNotifier = ValueNotifier<AnalyzerState>(AnalyzerState.stopped);
   AnalysisController? _controller;
   Timer? _notificationUpdateTimer;
+  bool _sourceReadyHandled = false, _smartSearchOnly = false;
   final _source = MediaStoreSource();
 
   AnalyzerState get serviceState => _serviceStateNotifier.value;
@@ -139,9 +141,11 @@ class Analyzer with WidgetsBindingObserver {
     if (args is Map) {
       entryIds = (args['entryIds'] as List?)?.cast<int>();
       force = args['force'] ?? false;
+      _smartSearchOnly = args['smartSearchOnly'] ?? false;
     }
     await reportService.log('Analyzer start for ${entryIds?.length ?? 'all'} entries');
     _controller?.dispose();
+    _sourceReadyHandled = false;
     _controller = AnalysisController(
       canStartService: false,
       entryIds: entryIds,
@@ -180,19 +184,38 @@ class Analyzer with WidgetsBindingObserver {
   }
 
   void _onSourceStateChanged() {
-    if (_source.isReady) {
-      _serviceStateNotifier.value = AnalyzerState.stopping;
+    if (_source.isReady && isRunning) {
+      unawaited(_onSourceReady());
+    }
+  }
+
+  // smart search indexing runs as separate work, once the source is ready
+  Future<void> _onSourceReady() async {
+    if (_sourceReadyHandled) return;
+    _sourceReadyHandled = true;
+    try {
+      final controller = _controller;
+      if (_smartSearchOnly && controller != null && !controller.isStopping) {
+        await smartSearch.indexInService(_source, controller);
+      }
+    } catch (error, stack) {
+      await reportService.recordError(error, stack);
+    } finally {
+      if (isRunning) {
+        _serviceStateNotifier.value = AnalyzerState.stopping;
+      }
     }
   }
 
   Future<void> _updateNotification() async {
     if (!isRunning) return;
 
-    final title = sourceState.getName(_l10n);
+    final smartSearchProgress = smartSearch.indexingProgressNotifier.value;
+    final title = _smartSearchOnly ? _l10n.smartSearchIndexingNotificationTitle : sourceState.getName(_l10n);
     if (title == null) return;
 
-    final progress = _source.progressNotifier.value;
-    final progressive = progress.total != 0 && sourceState != SourceState.locatingCountries;
+    final progress = smartSearchProgress ?? _source.progressNotifier.value;
+    final progressive = progress.total != 0 && (smartSearchProgress != null || sourceState != SourceState.locatingCountries);
 
     try {
       await _channel.invokeMethod('updateNotification', <String, Object?>{

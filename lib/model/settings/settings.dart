@@ -22,6 +22,7 @@ import 'package:aves/model/settings/modules/navigation.dart';
 import 'package:aves/model/settings/modules/privacy.dart';
 import 'package:aves/model/settings/modules/screen_saver.dart';
 import 'package:aves/model/settings/modules/slideshow.dart';
+import 'package:aves/model/settings/modules/smart_search.dart';
 import 'package:aves/model/settings/modules/viewer.dart';
 import 'package:aves/model/settings/modules/widget.dart';
 import 'package:aves/ref/bursts.dart';
@@ -61,6 +62,7 @@ class Settings
         PrivacySettings,
         ScreenSaverSettings,
         SlideshowSettings,
+        SmartSearchSettings,
         SubtitlesSettings,
         VideoSettings,
         ViewerSettings,
@@ -397,6 +399,10 @@ class Settings
           case SettingKeys.convertWriteMetadataKey:
           case SettingKeys.mapShowItemTracksKey:
           case SettingKeys.saveSearchHistoryKey:
+          case SettingKeys.enableSmartSearchKey:
+          case SettingKeys.smartSearchUnmeteredOnlyKey:
+          case SettingKeys.smartSearchChargingOnlyKey:
+          case SettingKeys.smartSearchPromoDismissedKey:
           case SettingKeys.showPinchGestureAlternativesKey:
           case SettingKeys.screenSaverFillScreenKey:
           case SettingKeys.screenSaverAnimatedZoomEffectKey:

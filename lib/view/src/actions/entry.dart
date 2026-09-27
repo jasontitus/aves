@@ -22,6 +22,7 @@ extension ExtraEntryActionView on EntryAction {
       .toggleFavourite =>
         // different data depending on toggle state
         l10n.entryActionAddFavourite,
+      .findSimilar => l10n.entryActionFindSimilar,
       // raster
       .rotateCCW => l10n.entryActionRotateCCW,
       .rotateCW => l10n.entryActionRotateCW,
@@ -101,6 +102,7 @@ extension ExtraEntryActionView on EntryAction {
       .toggleFavourite =>
         // different data depending on toggle state
         AIcons.favourite,
+      .findSimilar => AIcons.findSimilar,
       // raster
       .rotateCCW => AIcons.rotateLeft,
       .rotateCW => AIcons.rotateRight,

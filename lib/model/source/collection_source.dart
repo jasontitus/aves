@@ -18,6 +18,7 @@ import 'package:aves/model/grouping/common.dart';
 import 'package:aves/model/grouping/convert.dart';
 import 'package:aves/model/metadata/trash.dart';
 import 'package:aves/model/settings/settings.dart';
+import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/source/album.dart';
 import 'package:aves/model/source/analysis_controller.dart';
 import 'package:aves/model/source/events.dart';
@@ -510,6 +511,7 @@ abstract class CollectionSource with SourceBase, AlbumMixin, CountryMixin, Place
     final defaultAnalysisController = AnalysisController();
     final _analysisController = analysisController ?? defaultAnalysisController;
     final force = _analysisController.force;
+    var startedAnalysisService = false;
     if (!_analysisController.isStopping) {
       var startAnalysisService = false;
       if (_analysisController.canStartService && settings.canUseAnalysisService) {
@@ -536,6 +538,7 @@ abstract class CollectionSource with SourceBase, AlbumMixin, CountryMixin, Place
               force: force,
               entryIds: entries?.map((entry) => entry.id).toList(),
             );
+            startedAnalysisService = true;
           default:
             unawaited(reportService.log('analysis service not started because app is in state=$lifecycleState'));
         }
@@ -550,6 +553,13 @@ abstract class CollectionSource with SourceBase, AlbumMixin, CountryMixin, Place
     }
     defaultAnalysisController.dispose();
     state = SourceState.ready;
+
+    // Smart search indexing follows analysis, when it is done in this engine:
+    // when the analysis service is started, it is triggered on its completion instead, cf `AvesApp`.
+    if (_analysisController.canStartService && !startedAnalysisService) {
+      final isFullAnalysis = entries == null && loadedScope == CollectionSource.fullScope;
+      unawaited(smartSearch.onAnalysisDone(this, isFullAnalysis: isFullAnalysis, entries: entries));
+    }
   }
 
   void onAspectRatioChanged() => eventBus.fire(AspectRatioChangedEvent());

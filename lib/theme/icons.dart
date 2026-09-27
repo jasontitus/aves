@@ -153,6 +153,8 @@ class AIcons {
   static const rotateRight = Symbols.rotate_right;
   static const rotateScreen = Symbols.screen_rotation;
   static const search = Symbols.search;
+  static const findSimilar = Symbols.burst_mode;
+  static const smartSearch = Symbols.manage_search;
   static const select = Symbols.select_all;
   static const setAs = Symbols.wallpaper;
   static const setBoundEnd = MdiIcons.rayEnd;
