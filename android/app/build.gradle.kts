@@ -113,6 +113,13 @@ android {
         }
     }
 
+    testOptions {
+        // tests use JUnit Jupiter annotations
+        unitTests.all { it.useJUnitPlatform() }
+        // e.g. `android.util.Log` calls in code under test
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
         buildConfig = true
         resValues = true
@@ -247,6 +254,7 @@ dependencies {
     implementation(project(":exifinterface"))
 
     testImplementation(libs.junit)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     ksp(libs.glideKsp)
 
