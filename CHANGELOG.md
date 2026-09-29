@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Hijri calendars (tabular scheme IIa, Umm al-Qura)
 - Search: smart search, to find items by describing them, with an on-device model downloaded on demand
+- Search: optional SigLIP2 multilingual image/text model (570 MiB on-demand download; 64-bit devices with at least 3.5 GB RAM)
 - Viewer: "More like this" action, to find similar items
 
 ### Fixed

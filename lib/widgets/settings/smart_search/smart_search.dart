@@ -56,6 +56,7 @@ class SmartSearchSection extends SettingsSection {
     final l10n = context.l10n;
     return switch (modelId) {
       SmartSearchModels.bestQuality => l10n.smartSearchModelBestQuality,
+      SmartSearchModels.siglip2 => l10n.smartSearchModelSiglip2,
       _ => l10n.smartSearchModelStandard,
     };
   }
@@ -65,6 +66,7 @@ class SmartSearchSection extends SettingsSection {
 class SmartSearchModels {
   static const standard = 'openclip-vitb32-laion2b-v1';
   static const bestQuality = 'pe-core-b16-224-v1';
+  static const siglip2 = 'siglip2-b32-256-selective-int8-v1';
 }
 
 class SettingsTileSmartSearchEnable extends SettingsTile with FeedbackMixin {

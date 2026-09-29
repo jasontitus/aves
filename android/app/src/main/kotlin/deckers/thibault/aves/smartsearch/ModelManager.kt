@@ -49,7 +49,7 @@ class ModelManager(private val context: Context) {
 
     fun isInstalled(spec: ModelSpec) = verifiedMarker(spec).exists() && spec.files.all { File(modelDir(spec), it.name).exists() }
 
-    val canDownload: Boolean get() = ModelCatalog.MODEL_BASE_URL.isNotEmpty()
+    val canDownload: Boolean get() = ModelCatalog.all.any { it.downloadBaseUrl.isNotEmpty() }
 
     private val installLock = ReentrantLock()
 
@@ -91,7 +91,7 @@ class ModelManager(private val context: Context) {
     }
 
     fun startDownload(spec: ModelSpec, unmeteredOnly: Boolean): DownloadStartResult {
-        if (!canDownload) return DownloadStartResult.UNAVAILABLE
+        if (spec.downloadBaseUrl.isEmpty()) return DownloadStartResult.UNAVAILABLE
         if (isInstalled(spec)) return DownloadStartResult.ALREADY_INSTALLED
         // files of a pack that is not verified are not trusted (e.g. partially copied)
         modelDir(spec).deleteRecursively()
@@ -106,7 +106,7 @@ class ModelManager(private val context: Context) {
         val ids = missing.map { f ->
             val target = File(dlDir, f.name)
             target.delete()
-            val request = DownloadManager.Request("${ModelCatalog.MODEL_BASE_URL}${spec.id}/${f.name}".toUri())
+            val request = DownloadManager.Request("${spec.downloadBaseUrl}${spec.id}/${f.name}".toUri())
                 .setDestinationUri(Uri.fromFile(target))
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setAllowedOverMetered(!unmeteredOnly)
@@ -132,6 +132,7 @@ class ModelManager(private val context: Context) {
         var failed = false
         var allDone = true
         var waiting = false
+        var running = false
         downloadManager.query(DownloadManager.Query().setFilterById(*ids)).use { cursor ->
             if (cursor.count < ids.size) failed = true
             val statusIdx = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
@@ -146,7 +147,10 @@ class ModelManager(private val context: Context) {
                         waiting = true
                     }
 
-                    else -> allDone = false
+                    else -> {
+                        allDone = false
+                        running = true
+                    }
                 }
                 downloaded += cursor.getLong(soFarIdx)
             }
@@ -156,7 +160,7 @@ class ModelManager(private val context: Context) {
             cancelDownload(spec)
             return DownloadProgress(downloaded, total, DownloadState.FAILED)
         }
-        if (!allDone) return DownloadProgress(downloaded, total, if (waiting) DownloadState.WAITING else DownloadState.RUNNING)
+        if (!allDone) return DownloadProgress(downloaded, total, if (waiting && !running) DownloadState.WAITING else DownloadState.RUNNING)
 
         // all files downloaded: verify and install them in the background, once
         if (installFailures.remove(spec.id)) return DownloadProgress(0, total, DownloadState.FAILED)

@@ -168,6 +168,7 @@
   },
   "smartSearchModelStandard": "Standard",
   "smartSearchModelBestQuality": "Best quality",
+  "smartSearchModelSiglip2": "SigLIP2 multilingual",
   "smartSearchModelNotDownloaded": "Not downloaded",
   "smartSearchModelDownloading": "Downloading: {done} of {total}",
   "@smartSearchModelDownloading": {

@@ -94,11 +94,14 @@ class ImageEncoder(private val spec: ModelSpec, modelDir: File, threads: Int, lo
 }
 
 class TextEncoder(private val spec: ModelSpec, modelDir: File, threads: Int, lowMemory: Boolean) : AutoCloseable {
-    private val tokenizer = File(modelDir, ModelCatalog.BPE_FILE).inputStream().buffered().use { ClipTokenizer(it) }
+    private val tokenize: (String, Int) -> LongArray = when (spec.tokenizerType) {
+        TokenizerType.CLIP_BPE -> File(modelDir, ModelCatalog.BPE_FILE).inputStream().buffered().use { ClipTokenizer(it)::tokenize }
+        TokenizerType.GEMMA_BPE -> Siglip2Tokenizer(File(modelDir, ModelCatalog.SIGLIP2_TOKENIZER_FILE))::tokenize
+    }
     private val model = OrtModel(File(modelDir, "text.ort"), threads, lowMemory)
 
     fun encode(text: String): FloatArray {
-        val ids = tokenizer.tokenize(text, spec.contextLength)
+        val ids = tokenize(text, spec.contextLength)
         OnnxTensor.createTensor(OrtEnvironment.getEnvironment(), LongBuffer.wrap(ids), longArrayOf(1, spec.contextLength.toLong())).use { tensor ->
             return checkDim(spec, model.run(tensor))
         }

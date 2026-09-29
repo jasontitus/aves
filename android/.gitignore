@@ -14,3 +14,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Keep preview signing properties and alternate keystore formats out of commits.
+**/preview*.properties
+**/*preview*keystore*
+**/*.p12
+**/*.bks

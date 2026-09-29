@@ -1,9 +1,10 @@
 import 'package:aves/model/smart_search.dart';
 import 'package:aves/model/settings/settings.dart';
 import 'package:aves/widgets/common/extensions/build_context.dart';
+import 'package:aves/widgets/settings/smart_search/smart_search.dart';
 import 'package:material_ui/material_ui.dart';
 
-// hints shown when smart search yields nothing: incomplete index, non-English locale
+// hints shown when smart search yields nothing: incomplete index, model-specific language advice
 class SmartSearchEmptyHint extends StatelessWidget {
   const new({super.key});
 
@@ -26,8 +27,9 @@ class SmartSearchEmptyHint extends StatelessWidget {
 }
 
 class SmartSearchText {
-  // the embedding models are trained on English captions
-  static bool get needsLanguageHint => settings.resolvedLocale.languageCode != 'en';
+  // The OpenCLIP and PE-Core packs favor English; the SigLIP2 text tower is multilingual.
+  static bool get needsLanguageHint =>
+      settings.resolvedLocale.languageCode != 'en' && smartSearch.status?.activeModel != SmartSearchModels.siglip2;
 
   // `null` when the index is complete or unknown
   static String? partialIndexText(BuildContext context) {

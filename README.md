@@ -39,6 +39,8 @@ It scans your media collection to identify **motion photos**, **panoramas** (aka
 
 **Navigation and search** is an important part of Aves. The goal is for users to easily flow from albums to photos to tags to maps, etc.
 
+Optional **on-device smart search** finds photos by description or by visual similarity. Model files are downloaded only when selected, not packaged in the APK; the [SigLIP2 multilingual pack](https://huggingface.co/sliderforthewin/aves-smart-search-siglip2-selective-int8) adds a 570 MiB download and requires a 64-bit device with at least 3.5 GB RAM. Indexing runs locally and may take time for large libraries; non-English search quality varies by language and gallery.
+
 Aves integrates with Android (including Android TV) with features such as **widgets**, **app shortcuts**, **screen saver** and **global search** handling. It also works as a **media viewer and picker**.
 
 ## Screenshots
@@ -125,6 +127,16 @@ Before running or building the app, update the dependencies for the desired flav
 ```
 
 To build the project, create a file named `<app dir>/android/key.properties`. It should contain a reference to a keystore for app signing, and other necessary credentials. See [key_template.properties](https://github.com/deckerst/aves/blob/develop/android/key_template.properties) for the expected keys.
+
+For a separately installable, non-debuggable smart-search preview, use the libre dependencies and a **dedicated release keystore**. Put only `storeFile`, `storePassword`, `keyAlias`, and `keyPassword` in a private properties file outside this repository; keep its path as a one-shot environment variable:
+
+```sh
+scripts/apply_flavor_libre.sh
+AVES_PREVIEW_KEY_PROPERTIES=/path/to/private/key.properties ./flutterw build apk -t lib/main_libre.dart --flavor preview --release --split-per-abi
+```
+
+The preview package (`deckers.thibault.aves.preview`) coexists with the official Libre app (`deckers.thibault.aves.libre`); it has separate settings, model downloads, and search indexes. It cannot update the official app or receive updates signed by the upstream publisher. Back up the preview signing key securely for future preview updates.
+Distribute only the `--release` preview APK: debug and profile builds are debuggable. Before publishing or installing an update, verify the APK signer certificate SHA-256 with `apksigner verify --print-certs`; the preview signing identity is `9b29146e50e5dd12cf1f764467dbc6c6d5d14f81a50408d8d4c19f12bc2d8da2`.
 
 To run the app:
 ```

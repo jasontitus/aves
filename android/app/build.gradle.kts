@@ -13,7 +13,7 @@ val packageName = "deckers.thibault.aves"
 // Keys
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile: File = rootProject.file("key.properties")
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     println("Load keystore props from file=$keystorePropertiesFile")
     // for release using credentials stored in a local file
@@ -34,6 +34,24 @@ if (keystorePropertiesFile.exists()) {
     getEnv("keyAlias", "AVES_KEY_ALIAS")
     getEnv("keyPassword", "AVES_KEY_PASSWORD")
     getEnv("googleApiKey", "AVES_GOOGLE_API_KEY")
+}
+
+// Preview credentials are never used for the official play, izzy, or libre identities.
+val previewKeystoreProperties = Properties()
+val previewKeystorePropertiesFile = System.getenv("AVES_PREVIEW_KEY_PROPERTIES")?.let { file(it) }
+if (previewKeystorePropertiesFile != null) {
+    check(previewKeystorePropertiesFile.isFile) {
+        "Preview signing properties file not found: $previewKeystorePropertiesFile"
+    }
+    previewKeystorePropertiesFile.inputStream().use { previewKeystoreProperties.load(it) }
+    check(listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+        .all { (previewKeystoreProperties[it] as? String)?.isNotBlank() == true }) {
+        "Preview signing properties must contain a keystore path, passwords, and alias"
+    }
+    check(!(previewKeystoreProperties["keyAlias"] as String).equals("androiddebugkey", ignoreCase = true) &&
+        File(previewKeystoreProperties["storeFile"] as String).name != "debug.keystore") {
+        "Preview release must use a dedicated key, not the Android SDK debug key"
+    }
 }
 
 android {
@@ -87,6 +105,14 @@ android {
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
+        if (previewKeystorePropertiesFile != null) {
+            create("previewRelease") {
+                keyAlias = previewKeystoreProperties["keyAlias"] as String
+                keyPassword = previewKeystoreProperties["keyPassword"] as String
+                storeFile = file(previewKeystoreProperties["storeFile"] as String)
+                storePassword = previewKeystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     flavorDimensions += "store"
@@ -95,6 +121,7 @@ android {
         create("play") {
             // Google Play
             dimension = "store"
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
 
         create("izzy") {
@@ -102,6 +129,7 @@ android {
             // check offending libraries with `scanapk`
             // cf https://android.izzysoft.de/articles/named/app-modules-2
             dimension = "store"
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
 
         create("libre") {
@@ -110,6 +138,15 @@ android {
             // cf https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/
             dimension = "store"
             applicationIdSuffix = ".libre"
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
+
+        create("preview") {
+            // Side-by-side, libre-dependency fork builds; never replace upstream Aves Libre.
+            dimension = "store"
+            applicationIdSuffix = ".preview"
+            signingConfigs.findByName("previewRelease")?.let { signingConfig = it }
+            manifestPlaceholders["googleApiKey"] = "NONE"
         }
     }
 
@@ -135,11 +172,6 @@ android {
         }
 
         getByName("release") {
-            if (signingConfigs.names.contains("release")) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                println("Skip release signing as it is not configured")
-            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -189,6 +221,11 @@ android {
 }
 
 androidComponents {
+    // With no dedicated key, the preview release variant does not exist, even for
+    // aggregate or abbreviated Gradle tasks. Debug/profile variants remain local-only.
+    beforeVariants(selector().withFlavor("store", "preview").withBuildType("release")) { variant ->
+        if (previewKeystorePropertiesFile == null) variant.enable = false
+    }
     onVariants(selector().withFlavor("store", "izzy")) { variant ->
         // uncompressed native libraries are recommended:
         // https://developer.android.com/build/releases/agp-4-2-0-release-notes#compress-native-libs-dsl

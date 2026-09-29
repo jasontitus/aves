@@ -2,10 +2,7 @@ package deckers.thibault.aves.smartsearch
 
 // Embedding model packs available for smart search.
 // Models are downloaded on demand, never bundled, and verified against the hashes below.
-// Conversion: OpenCLIP export to ONNX (opset 18), dynamic int8 per-channel quantization
-// (`MatMul`/`Gemm`, plus `Gather` for text), keeping `resblocks.0/mlp/c_proj` in float
-// as its activation outliers break int8 text embeddings, then conversion to ORT format for ARM.
-// The conversion script and license notices are published with the model files.
+// Each pack documents its own export and conversion recipe at its pinned download source.
 object ModelCatalog {
     // to increment whenever image loading or preprocessing changes, so that indexes are rebuilt
     // - 4: images at least as large as the model input (decoding the image when its thumbnail is too small),
@@ -18,6 +15,7 @@ object ModelCatalog {
     const val MODEL_BASE_URL = "https://huggingface.co/sliderforthewin/aves-smart-search/resolve/ebc8231d926b17968cbcc47b32e4c9c0cf956cd1/"
 
     const val BPE_FILE = "bpe_simple_vocab_16e6.txt.gz"
+    const val SIGLIP2_TOKENIZER_FILE = "tokenizer.json"
     private const val BPE_SHA256 = "924691ac288e54409236115652ad4aa250f48203de50a9e4722a6ecd48d6804a"
     private const val BPE_SIZE = 1356917L
 
@@ -62,7 +60,34 @@ object ModelCatalog {
         ),
     )
 
-    val all = listOf(standard, bestQuality)
+    val siglip2 = ModelSpec(
+        id = "siglip2-b32-256-selective-int8-v1",
+        // Matched timm SigLIP2 Base/32 256 towers, Apache-2.0, pinned separately from existing packs.
+        // Export recipe: scripts/smart_search/convert_siglip2.py; timm source revision
+        // cd1efb47643f2794413dd79ef24397c175032780. ORT serialization is not byte-reproducible;
+        // compare embeddings and verify the pinned published hashes before distribution.
+        downloadBaseUrl = "https://huggingface.co/sliderforthewin/aves-smart-search-siglip2-selective-int8/resolve/7ab165533402fa42eedc575efc110d2b01ed61a5/",
+        tokenizerType = TokenizerType.GEMMA_BPE,
+        dim = 768,
+        imageSize = 256,
+        resize = ResizeMode.SQUASH,
+        // The exported image graph applies its own [-1, 1] normalization to RGB [0, 1].
+        mean = floatArrayOf(0f, 0f, 0f),
+        std = floatArrayOf(1f, 1f, 1f),
+        contextLength = 64,
+        queryPhrasings = 1,
+        // ~98th percentile of unrelated image pairs in the 100-image XM3600 smoke gallery.
+        similarMinScore = .66f,
+        minRamBytes = 3_500_000_000L,
+        requires64Bit = true,
+        files = listOf(
+            ModelFile("image.ort", "d6a54abc8d25ea7f5d633de8d27fbae6b3cdace0e87703140641e7317133efb6", 195003280L),
+            ModelFile("text.ort", "27c420458dfac229ed98c17dc57f516441dd10c912aa1682195cf0a2e578d591", 368788736L),
+            ModelFile(SIGLIP2_TOKENIZER_FILE, "220c63d496e0c14e63eb656c91e0215e926202e4c74b1f089e09f1920d779b04", 34362885L),
+        ),
+    )
+
+    val all = listOf(standard, bestQuality, siglip2)
 
     fun byId(id: String?) = all.firstOrNull { it.id == id }
 }
@@ -75,10 +100,17 @@ enum class ResizeMode {
     SQUASH,
 }
 
+enum class TokenizerType {
+    CLIP_BPE,
+    GEMMA_BPE,
+}
+
 class ModelFile(val name: String, val sha256: String, val size: Long)
 
 class ModelSpec(
     val id: String,
+    val downloadBaseUrl: String = ModelCatalog.MODEL_BASE_URL,
+    val tokenizerType: TokenizerType = TokenizerType.CLIP_BPE,
     val dim: Int,
     val imageSize: Int,
     val resize: ResizeMode,
@@ -87,7 +119,7 @@ class ModelSpec(
     val contextLength: Int,
     // number of phrasings of a text query to average, cf `TextEncoder.encodeQuery`
     val queryPhrasings: Int,
-    // similar images are kept when `score >= similarMinScore` (~ top 2% of image pairs on Flickr30k)
+    // similar images are kept when `score >= similarMinScore` (calibrated per embedding space)
     val similarMinScore: Float,
     val minRamBytes: Long,
     val requires64Bit: Boolean,
