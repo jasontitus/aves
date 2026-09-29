@@ -3,6 +3,7 @@ package deckers.thibault.aves.smartsearch
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import androidx.annotation.Keep
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.FloatBuffer
@@ -20,7 +21,9 @@ class OrtModel(file: File, val threads: Int, lowMemory: Boolean) : AutoCloseable
 
     private val env = OrtEnvironment.getEnvironment()
 
-    // must stay strongly reachable for the whole session lifetime, as ORT reads weights from it
+    // ORT reads initializers directly from this mapping after session creation.
+    // R8 otherwise deletes the field in release builds, allowing GC to unmap live weights.
+    @field:Keep
     private val mapping: MappedByteBuffer = RandomAccessFile(file, "r").use { raf ->
         raf.channel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length())
     }
