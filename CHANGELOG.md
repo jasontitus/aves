@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Viewer: "More like this" action, to find similar items
 
 ### Fixed
+- Search: keep memory-mapped model weights alive in minified builds to prevent native indexing crashes
 
 - back navigation delay when animations are disabled
 - back navigation delay when toggling system UI
